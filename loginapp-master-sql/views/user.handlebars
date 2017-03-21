@@ -1,0 +1,178 @@
+ <h2 class="page-header">Dashboard</h2>
+<h1>{{username}}</h1>
+<p>Welcome to your dashboard</p> 
+<br/>
+<br/>
+<button id="addBtn">Add Job</button>
+<table class="table table-striped">
+    <tr>
+        <th>Job Name</th><th>Date Added</th><th>Status</th><th>Operations</th>
+    </tr>
+        {{#each row}}
+
+        <tr>
+            <td>{{this.Job_Name}}</td>
+            <td>{{this.Job_ShortDate}}</td> 
+            <td>{{this.Job_Status}}</td>
+            <td>
+                <div id="op-frm">
+                <form id="edit" method="post" action='/user/edit' onsubmit="return requestValidation();">
+                <button type="submit" class="btn btn-default btn-op-edit" name="editjobid" value={{this.Job_Id}}>Edit</button>
+                </form>
+            
+                <form id="delete" method="post" action='/user/delete' onsubmit="return requestValidation();">
+                <button type="submit" class="btn btn-default btn-op-delete" name="deletejobid" value={{this.Job_Id}}>Delete</button>
+                </form>
+            
+                <form id="run" method="post" action='/user/runjob' onsubmit="return requestValidation();">
+                <button type="submit" class="btn btn-default btn-op-run" name="runjobid" value={{this.Job_Id}}>Run</button>
+                </form>
+                </div>
+            </td>
+        </tr>
+        {{/each}}
+    
+</table>
+
+<!-- The Modal -->
+<div id="myModal" class="modal">
+    
+  <!-- Modal content -->
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <span class="close">x</span>
+            <h2>Add New Job</h2>
+            <form method="post" action="/user/upload">
+            <div>
+                <div class="form-group">
+                <label for="fname">Job Name </label>
+                <input type="text" class="form-control" id="jobname" required>
+                </div>
+                <div class="form-inline">
+                  <div class="form-group">
+                    <label for="compType">Compressed Type</label>
+                
+                    <select class="form-control" id="compType">
+                    <option value="1">.zip</option>
+                    <option value="2">.rar</option>
+                    <option value="3">.tar</option>
+                    </select>
+                  </div>
+                </div>
+            </div>
+                <input id="upload-input" type="file" name="uploads[]" multiple="multiple"></br>
+                <a class="redir-link" href="/"></a>
+            </form>
+            <div class="progress">
+              <div class="progress-bar" role="progressbar"></div>
+            <span><h3 id="msg"></h3></span>
+            </div>
+            <button id="upload-button" class="btn btn-lg upload-btn" type="button" >Upload Data</button>
+            <button id="done-button" class="btn btn-lg done-btn" type="button" disabled>Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>   
+</div>
+
+<script>
+
+function requestValidation() {
+      if (confirm("Click OK to continue?")){
+         console.log("Continue Request");
+         return true;
+      }
+      else {
+          console.log("Cancel Request");
+          return false;
+      }
+};
+
+$('#addBtn').click(function(){$('#myModal').lightbox_me({centered:true})});
+    
+$('.upload-btn').on('click', function (){
+    $('#upload-input').click();
+    $('.progress-bar').text('0%');
+    $('.progress-bar').width('0%');
+});
+
+$('.redir-link').on('click', function (){
+  window.location.reload(true);
+});
+
+$('.done-btn').on('click', function (){
+    $('#myModal').trigger('close');
+    $('.redir-link').click();
+});
+
+function refreshPage(){
+    window.location.reload(forceGet);
+} 
+
+$('#upload-input').on('change', function(){
+
+  var files = $(this).get(0).files;
+
+  if (files.length > 0){
+    // create a FormData object which will be sent as the data payload in the
+    // AJAX request
+    var formData = new FormData();
+
+    // loop through all the selected files and add them to the formData object
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      // add the files to formData object for the data payload
+      formData.append('uploads[]', file, file.name);
+    }
+    var jobname = document.getElementById('jobname').value;
+    if (!jobname) jobname = 'anonym';
+    var compress = document.getElementById('compType').value;
+    var filename = file.name;
+    $.ajax({
+      url: '/user/upload?jobname='+jobname+'&compress='+compress+'&filename='+filename,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(data){
+          console.log('upload successful!\n' + data);
+      },
+      xhr: function() {
+        // create an XMLHttpRequest
+        var xhr = new XMLHttpRequest();
+
+        // listen to the 'progress' event
+        xhr.upload.addEventListener('progress', function(evt) {
+
+          if (evt.lengthComputable) {
+            // calculate the percentage of upload completed
+            var percentComplete = evt.loaded / evt.total;
+            percentComplete = parseInt(percentComplete * 100);
+
+            // update the Bootstrap progress bar with the new percentage
+            $('.progress-bar').text(percentComplete + '%');
+            $('.progress-bar').width(percentComplete + '%');
+
+            // once the upload reaches 100%, set the progress bar text to done
+            if (percentComplete === 100) {
+              $('.progress-bar').html('Done');
+              document.getElementById("upload-button").disabled = true;
+              document.getElementById("done-button").disabled = false;
+            }
+
+          }
+
+        }, false);
+
+        return xhr;
+      }
+    });
+
+  }
+});
+
+</script>
